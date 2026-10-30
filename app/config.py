@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Moedas acompanhadas, separadas por vírgula (ex.: "USD,EUR")
     moedas: str = "USD,EUR"
     log_level: str = "INFO"
-    # Token exigido (cabeçalho X-API-Token) em coleta, regras e alertas. Vazio = aberto (só local).
+    # Token exigido (cabeçalho X-API-Token) em coleta, regras e alertas. Vazio = rotas protegidas recusadas (503).
     api_token: str | None = None
 
     # Agendador: horários (America/Sao_Paulo) da coleta em dias úteis.

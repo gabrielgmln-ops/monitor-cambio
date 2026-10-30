@@ -46,10 +46,13 @@ Sessao = Annotated[Session, Depends(get_sessao)]
 def exigir_token(x_api_token: Annotated[str | None, Header()] = None) -> None:
     """Protege regras, alertas e coleta manual com o token de API_TOKEN.
 
-    Sem API_TOKEN configurado, só aceita em modo aberto (desenvolvimento local).
+    Falha fechada: sem API_TOKEN configurado, recusa tudo (503).
     """
     esperado = get_settings().api_token
-    if esperado and not (x_api_token and secrets.compare_digest(x_api_token, esperado)):
+    if not esperado:
+        raise HTTPException(503, "API_TOKEN não configurado no servidor")
+    # Compara bytes: compare_digest com str não ASCII lançaria TypeError (500)
+    if not x_api_token or not secrets.compare_digest(x_api_token.encode(), esperado.encode()):
         raise HTTPException(401, "token inválido ou ausente (cabeçalho X-API-Token)")
 
 

@@ -15,7 +15,7 @@ alertas (log e e-mail) quando regras cadastradas são atingidas.
 cp .env.example .env          # troque a senha
 docker compose up -d --build
 curl http://localhost:8010/health
-curl -X POST "http://localhost:8010/coleta?inicio=2026-10-01&fim=2026-10-31"   # carga inicial
+curl -X POST -H "X-API-Token: $API_TOKEN" "http://localhost:8010/coleta?inicio=2026-10-01&fim=2026-10-31"   # carga inicial
 ```
 
 Portas no host: API `8010`, Postgres `5435` (ajustáveis com `API_PORTA_HOST` e `DB_PORTA_HOST`).
@@ -38,8 +38,8 @@ Regras: `{"moeda":"USD","tipo":"acima","valor":"5.60","email":"opcional@x.com"}`
 Tipos: `acima`, `abaixo` (preço de venda em R$) e `variacao_diaria` (% em módulo).
 Cada regra dispara no máximo uma vez por dia de cotação.
 
-Com `API_TOKEN` definido no `.env`, coleta, regras e alertas exigem o cabeçalho `X-API-Token`;
-as consultas de cotação e o `/health` continuam públicos. Sem token, tudo fica aberto (uso local).
+Coleta, regras e alertas exigem o cabeçalho `X-API-Token` com o valor de `API_TOKEN` do `.env`;
+sem `API_TOKEN` configurado essas rotas respondem 503 (falha fechada). Cotações e `/health` são públicos.
 
 ## Testes
 

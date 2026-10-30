@@ -7,6 +7,7 @@ from datetime import date
 
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.setdefault("MOEDAS", "usd, eur")
+os.environ["API_TOKEN"] = "token-teste"
 os.environ["AGENDADOR_ATIVO"] = "false"  # nada de coleta real durante os testes
 os.environ.pop("SMTP_HOST", None)
 
@@ -85,7 +86,7 @@ def api(fake_ptax):
         "EUR": [boletim("2026-10-28", "6.3000", "6.3010")],
     }
     app.dependency_overrides[get_cliente] = lambda: fake_ptax(dados)
-    with TestClient(app) as c:
+    with TestClient(app, headers={"X-API-Token": "token-teste"}) as c:
         yield c
     app.dependency_overrides.clear()
 

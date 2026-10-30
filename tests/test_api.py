@@ -105,11 +105,14 @@ def test_email_invalido_rejeitado(api):
     assert api.post("/regras", json=corpo).status_code == 422
 
 
-def test_token_exigido_quando_configurado(api, monkeypatch):
+def test_token_exigido(api, monkeypatch):
     from app.config import get_settings
 
-    monkeypatch.setattr(get_settings(), "api_token", "segredo-teste")
-    assert api.get("/regras").status_code == 401
+    sem = {"X-API-Token": ""}
+    assert api.get("/regras", headers=sem).status_code == 401
     assert api.get("/regras", headers={"X-API-Token": "errado"}).status_code == 401
-    assert api.get("/regras", headers={"X-API-Token": "segredo-teste"}).status_code == 200
-    assert api.get("/health").status_code == 200  # consulta pública continua aberta
+    assert api.get("/regras", headers={"X-API-Token": "tôken-ç"}).status_code == 401  # não ASCII: 401, não 500
+    assert api.get("/regras").status_code == 200
+    assert api.get("/health", headers=sem).status_code == 200  # consulta pública continua aberta
+    monkeypatch.setattr(get_settings(), "api_token", None)
+    assert api.get("/regras").status_code == 503  # sem token configurado: falha fechada
