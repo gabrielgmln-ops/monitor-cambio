@@ -47,3 +47,9 @@ def test_sem_cotacao_na_janela(fake_ptax):
 def test_erro_http_vira_erro_ptax(fake_ptax):
     with pytest.raises(ErroPTAX):
         fake_ptax({}, status=500).fechamentos("USD", date(2026, 10, 1), date(2026, 10, 2))
+
+
+def test_cotacao_zero_rejeitada(fake_ptax):
+    cliente = fake_ptax({"USD": [boletim("2026-10-26", "0", "0")]})
+    with pytest.raises(ErroPTAX):
+        cliente.fechamentos("USD", date(2026, 10, 26), date(2026, 10, 26))

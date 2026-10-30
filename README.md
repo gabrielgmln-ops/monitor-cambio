@@ -38,6 +38,9 @@ Regras: `{"moeda":"USD","tipo":"acima","valor":"5.60","email":"opcional@x.com"}`
 Tipos: `acima`, `abaixo` (preço de venda em R$) e `variacao_diaria` (% em módulo).
 Cada regra dispara no máximo uma vez por dia de cotação.
 
+Com `API_TOKEN` definido no `.env`, coleta, regras e alertas exigem o cabeçalho `X-API-Token`;
+as consultas de cotação e o `/health` continuam públicos. Sem token, tudo fica aberto (uso local).
+
 ## Testes
 
 ```bash

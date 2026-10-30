@@ -93,3 +93,23 @@ def test_email_enviado_quando_configurado(api, monkeypatch):
     api.post("/regras", json={"moeda": "EUR", "tipo": "acima", "valor": "6", "email": "eu@exemplo.com"})
     coletar(api)
     assert enviados and enviados[0][0] == "eu@exemplo.com"
+
+
+def test_coleta_so_inicio_respeita_limite(api):
+    assert api.post("/coleta", params={"inicio": "1990-01-01"}).status_code == 422
+    assert api.post("/coleta", params={"inicio": "2026-10-31", "fim": "2026-10-01"}).status_code == 422
+
+
+def test_email_invalido_rejeitado(api):
+    corpo = {"moeda": "USD", "tipo": "acima", "valor": "1", "email": "a@x.com, b@y.com"}
+    assert api.post("/regras", json=corpo).status_code == 422
+
+
+def test_token_exigido_quando_configurado(api, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "api_token", "segredo-teste")
+    assert api.get("/regras").status_code == 401
+    assert api.get("/regras", headers={"X-API-Token": "errado"}).status_code == 401
+    assert api.get("/regras", headers={"X-API-Token": "segredo-teste"}).status_code == 200
+    assert api.get("/health").status_code == 200  # consulta pública continua aberta

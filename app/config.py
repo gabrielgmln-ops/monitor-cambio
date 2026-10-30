@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # Moedas acompanhadas, separadas por vírgula (ex.: "USD,EUR")
     moedas: str = "USD,EUR"
     log_level: str = "INFO"
+    # Token exigido (cabeçalho X-API-Token) em coleta, regras e alertas. Vazio = aberto (só local).
+    api_token: str | None = None
 
     # Agendador: horários (America/Sao_Paulo) da coleta em dias úteis.
     # A PTAX de fechamento sai por volta das 13h; 13:30 coleta, 18:00 confere de novo.

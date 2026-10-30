@@ -76,9 +76,11 @@ class ClientePTAX:
             if item.get("tipoBoletim") != "Fechamento":
                 continue
             dia = datetime.fromisoformat(item["dataHoraCotacao"]).date()
-            resultado.append(
-                Cotacao(moeda.upper(), dia, Decimal(item["cotacaoCompra"]), Decimal(item["cotacaoVenda"]))
-            )
+            compra, venda = Decimal(item["cotacaoCompra"]), Decimal(item["cotacaoVenda"])
+            if compra <= 0 or venda <= 0:
+                # Cotação não positiva é dado corrompido: quebraria a divisão da variação
+                raise ErroPTAX(f"cotação inválida de {moeda} em {dia}: {compra}/{venda}")
+            resultado.append(Cotacao(moeda.upper(), dia, compra, venda))
         return sorted(resultado, key=lambda c: c.data)
 
     def cotacao_em(self, moeda: str, dia: date) -> Cotacao:

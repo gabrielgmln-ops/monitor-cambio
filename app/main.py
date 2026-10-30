@@ -6,9 +6,11 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+import secrets
+
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -39,6 +41,19 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Monitor de Câmbio", version="1.0.0", lifespan=lifespan)
 Sessao = Annotated[Session, Depends(get_sessao)]
+
+
+def exigir_token(x_api_token: Annotated[str | None, Header()] = None) -> None:
+    """Protege regras, alertas e coleta manual com o token de API_TOKEN.
+
+    Sem API_TOKEN configurado, só aceita em modo aberto (desenvolvimento local).
+    """
+    esperado = get_settings().api_token
+    if esperado and not (x_api_token and secrets.compare_digest(x_api_token, esperado)):
+        raise HTTPException(401, "token inválido ou ausente (cabeçalho X-API-Token)")
+
+
+Protegido = [Depends(exigir_token)]
 
 
 def get_cliente() -> ClientePTAX:
@@ -78,7 +93,7 @@ class RegraIn(BaseModel):
     moeda: str = Field(min_length=3, max_length=3)
     tipo: str = Field(description="acima | abaixo | variacao_diaria")
     valor: Decimal = Field(gt=0, max_digits=18, decimal_places=6)
-    email: str | None = None
+    email: EmailStr | None = None  # rejeita listas de destinatários e quebras de linha
 
 
 class RegraOut(RegraIn):
@@ -162,7 +177,7 @@ def variacao(moeda: str, sessao: Sessao, inicio: date | None = None, fim: date |
     )
 
 
-@app.post("/coleta")
+@app.post("/coleta", dependencies=Protegido)
 def coleta_manual(
     sessao: Sessao,
     cliente: Annotated[ClientePTAX, Depends(get_cliente)],
@@ -170,12 +185,17 @@ def coleta_manual(
     fim: date | None = None,
 ):
     """Dispara a coleta agora (útil para carga inicial do histórico)."""
-    if inicio and fim and (fim - inicio).days > 366:
+    # Resolve os padrões ANTES de validar: só `inicio` não pode virar "desde 1990 até hoje"
+    fim = fim or hoje()
+    inicio = inicio or fim - timedelta(days=10)
+    if inicio > fim:
+        raise HTTPException(422, "inicio deve ser <= fim")
+    if (fim - inicio).days > 366:
         raise HTTPException(422, "período máximo de 366 dias por coleta")
     return coletar(sessao, cliente, get_settings().lista_moedas, inicio, fim)
 
 
-@app.post("/regras", response_model=RegraOut, status_code=201)
+@app.post("/regras", response_model=RegraOut, status_code=201, dependencies=Protegido)
 def criar_regra(regra: RegraIn, sessao: Sessao):
     moeda = _moeda_valida(regra.moeda)
     try:
@@ -189,13 +209,13 @@ def criar_regra(regra: RegraIn, sessao: Sessao):
                     email=nova.email, ativa=nova.ativa)
 
 
-@app.get("/regras", response_model=list[RegraOut])
+@app.get("/regras", response_model=list[RegraOut], dependencies=Protegido)
 def listar_regras(sessao: Sessao):
     return [RegraOut(id=r.id, moeda=r.moeda, tipo=r.tipo, valor=r.valor, email=r.email, ativa=r.ativa)
             for r in sessao.scalars(select(RegraAlerta).order_by(RegraAlerta.id))]
 
 
-@app.delete("/regras/{regra_id}", status_code=204)
+@app.delete("/regras/{regra_id}", status_code=204, dependencies=Protegido)
 def desativar_regra(regra_id: int, sessao: Sessao):
     """Desativa (não apaga): o histórico de alertas continua apontando para a regra."""
     regra = sessao.get(RegraAlerta, regra_id)
@@ -205,7 +225,7 @@ def desativar_regra(regra_id: int, sessao: Sessao):
     sessao.commit()
 
 
-@app.get("/alertas", response_model=list[AlertaOut])
+@app.get("/alertas", response_model=list[AlertaOut], dependencies=Protegido)
 def listar_alertas(sessao: Sessao, limite: Annotated[int, Query(ge=1, le=500)] = 50):
     q = select(AlertaDisparado).order_by(AlertaDisparado.id.desc()).limit(limite)
     return [AlertaOut(id=a.id, regra_id=a.regra_id, data_cotacao=a.data_cotacao, mensagem=a.mensagem)
