@@ -111,7 +111,7 @@ def test_token_exigido(api, monkeypatch):
     sem = {"X-API-Token": ""}
     assert api.get("/regras", headers=sem).status_code == 401
     assert api.get("/regras", headers={"X-API-Token": "errado"}).status_code == 401
-    assert api.get("/regras", headers={"X-API-Token": "tôken-ç"}).status_code == 401  # não ASCII: 401, não 500
+    assert api.get("/regras", headers={"X-API-Token": "tôken-ç".encode("latin-1")}).status_code == 401  # não ASCII: 401, não 500
     assert api.get("/regras").status_code == 200
     assert api.get("/health", headers=sem).status_code == 200  # consulta pública continua aberta
     monkeypatch.setattr(get_settings(), "api_token", None)
