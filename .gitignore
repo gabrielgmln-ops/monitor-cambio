@@ -1,0 +1,6 @@
+# monitor-cambio/.gitignore
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
