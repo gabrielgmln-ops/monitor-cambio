@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "${DB_PORTA_HOST:-5434}:5432"   # portas do host configuráveis: 5432/5433/8000 já usadas por outros projetos
+      - "${DB_PORTA_HOST:-5435}:5432"   # portas do host configuráveis: 5432-5434 e 8000 já usadas por outros projetos
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

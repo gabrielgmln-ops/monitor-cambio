@@ -18,7 +18,7 @@ curl http://localhost:8010/health
 curl -X POST "http://localhost:8010/coleta?inicio=2026-10-01&fim=2026-10-31"   # carga inicial
 ```
 
-Portas no host: API `8010`, Postgres `5434` (ajustáveis com `API_PORTA_HOST` e `DB_PORTA_HOST`).
+Portas no host: API `8010`, Postgres `5435` (ajustáveis com `API_PORTA_HOST` e `DB_PORTA_HOST`).
 Documentação interativa: http://localhost:8010/docs
 
 ## Endpoints
